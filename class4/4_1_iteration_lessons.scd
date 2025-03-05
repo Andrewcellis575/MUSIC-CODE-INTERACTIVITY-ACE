@@ -28,6 +28,25 @@ z = [6, 4, 0.5, 10, 7].collect
 };
 )
 
+//some bad code
+(
+{a = [1,2,3,4,5,6,7,8,9];		// the array of harmonics
+f =  200 * a;				// now they are frequencies
+b = [
+	SinOsc.ar(f[0]), SinOsc.ar(f[1]), SinOsc.ar(f[2]),
+	SinOsc.ar(f[3]), SinOsc.ar(f[4]), SinOsc.ar(f[5]),
+	SinOsc.ar(f[6]), SinOsc.ar(f[7]), SinOsc.ar(f[8])
+];	// now they are oscillators
+b = b * 0.1/a;		// now the oscillators levels are reduced
+Out.ar(0, Mix(b));}.play
+)
+
+//simpler code—uses multichannel expansion
+a = [1,2,3,4,5,6,7,8,9];
+{Mix(SinOsc.ar(200 * a) * 0.1/a);}.play
+
+
+
 x = {VarSaw.ar(40!2, 0, 0.05)}.play;
 
 (

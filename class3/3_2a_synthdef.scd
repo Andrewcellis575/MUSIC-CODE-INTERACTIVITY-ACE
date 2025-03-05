@@ -36,8 +36,27 @@ SynthDef.new(\sineTest, {
 //To execute the SynthDef, we create a new Synth and provide it with the name of a SynthDef.
 x = Synth.new(\sineTest);
 
-
 x.free; // to free the synth
+
+
+
+//lets do it again in the simplest possible way
+
+SynthDef(\tone,
+	{
+	|freq = 440, amp = 0.5, pan = 0|
+    var sig = SinOsc.ar(freq) * amp;
+    Out.ar(0, Pan2.ar(sig, pan));
+	}
+).add;
+
+//turn on
+x = Synth.new(\tone);
+
+//turn onn
+x.free
+
+
 
 //As is the case with many objects in SuperCollider, we create a new instance using the "new" message. "new," in this case, takes 6 arguments, but generally, you'll only specify values for the first two arguments, name and ugenGraphFunc.
 
@@ -92,7 +111,7 @@ x.free;
 
 (
 
-x.set(\range, 400);
+x.set(\range, 1000);
 )
 
 
