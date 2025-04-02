@@ -65,7 +65,7 @@ as in ~buffers[0] or ~buffers[1], etc
 
 ~np[1] = {
 	var audio, rate;
-	rate = MouseX.kr(xxxxxxx)
+	rate = MouseX.kr(0.25, 5, 1);
 	audio =	PlayBuf.ar(~numChannels, bufnum: ~buffers[~soundFileIndex],	rate: rate, loop: 1)
 	(Pan2.ar(audio, 0);
 };   	// loop

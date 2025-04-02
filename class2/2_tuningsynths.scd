@@ -21,10 +21,12 @@ f = (sustain: 4, freq: {440 * [1/1, 5/4]}).play
 { SinOsc.ar(261.625565*[1/1, 7/6], 0, 0.5) }.play;
 { SinOsc.ar(261.625565*[1/1, 6/5], 0, 0.5) }.play;
 
-(a = NodeProxy.new.play; // play to hardware output.
+(
+a = NodeProxy.new.play; // play to hardware output.
 a.fadeTime = 1; // fadeTime specifies crossfade
-// set the source
-a.source = { };) // start your engines, A is empty!
+a.source = { }; // set the source
+
+) // start your engines, A is empty!
 
 a.source = { }; // start your engines, A is empty!
 

@@ -6,7 +6,7 @@
 
 n = NodeProxy.audio(s, 2).play;
 
-n[0..2] = { |widefreq = 4.25, lo = 4, hi = 5, attack = 0.1, decay = 0.1 |
+n[0..4] = { |widefreq = 4.25, lo = 4, hi = 5, attack = 0.1, decay = 0.1 |
 	var a, f;
 	lo = lo * exprand(1, 200);
 	hi = hi * exprand(1, 200);

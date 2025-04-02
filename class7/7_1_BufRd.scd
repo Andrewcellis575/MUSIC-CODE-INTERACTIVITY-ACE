@@ -1,18 +1,4 @@
 
-s.boot;
-
-~b0 = Buffer.read(s, )
-~b0 = Buffer.read(s, "/Users/danielfishkin/gitprojects/MUSIC-CODE-INTERACTIVITY/new_highlights/NK_small plate rattling.wav");
-~b0.play;
-
-~b0.zero; //clear the buffer but don't kill it. THIS IS DIFFERENT FROM FREE!
-~b0.play
-
-//using zero method you can now use the read method to throw different info into the buffer
-~b0.read("/Users/danielfishkin/gitprojects/MUSIC-CODE-INTERACTIVITY/new_highlights/niceCHORDS.wav");
-~b0.play;
-
-~b0.free;
 
 Buffer.freeAll;//completely empty all buffers on server
 
@@ -21,26 +7,12 @@ Buffer.freeAll;//completely empty all buffers on server
 ~b0 = Buffer.read(s,"/Users/danielfishkin/gitprojects/MUSIC-CODE-INTERACTIVITY/class6/daxos/daxSNARE_3.wav" );
 ~b0.play;
 ~b1 = Buffer.read(s, "/Users/danielfishkin/gitprojects/MUSIC-CODE-INTERACTIVITY/class6/daxos/mewl.wav");
-~b2 = Buffer.read(s,"/Users/danielfishkin/gitprojects/MUSIC-CODE-INTERACTIVITY/class6/daxos/daxSHIVEr.wav" );
+~b2 = Buffer.read(s,"/Users/danielfishkin/gitprojects/MUSIC-CODE-INTERACTIVITY/class6/daxos/daxSHIVEr.wav");
 ~b3 = Buffer.read(s, "/Users/danielfishkin/gitprojects/MUSIC-CODE-INTERACTIVITY/class6/daxos/TINGLYdaxCHORD_1.wav" );
 ~b0.play;
 ~b1.play;
 ~b2.play
 ~b3.play;
-
-
-//And I'll start by creating an empty Array, which will be used to hold our buffers:
-~daxo = Array.new;
-
-//and I'm also going to use an instance of a class called PathName that acts as a reference to the folder of daxo sounds.
-
-~folder = PathName.new("/Users/danielfishkin/gitprojects/CreativeMusicalCoding/class4/daxos/");
-
-//If you send the message "entries" to a PathName, it will return an Array of PathNames representing the soundfiles themselves.
-
-~folder.entries;
-
-//Now all I have to do is iterate over the folder entries using do, similar to what we saw in tutorial 6. I'll iterate over these paths and on each iteration, I'll add a Buffer to the Array, using the current path. I'll need to use the method called fullPath to convert a PathName into a String.
 
 
 
@@ -59,6 +31,12 @@ SynthDef.new(\bufrd_test, {
 	Out.ar(out, sig);
 }).add;
 )
+
+
+
+~bufrd_test.set(\buf, ~b1, \start, 0, \end, ~b1.numFrames-1);
+
+~bufrd_test.gui
 
 //Now we can play the file forward, or backward
 
@@ -88,6 +66,43 @@ SynthDef.new(\bufrd_loop, {
 x = Synth.new(\bufrd_loop, [\buf, ~b2.bufnum, \start, 0, \end, ~b2.numFrames-1]);
 x.free
 
+(
+~bufrd_loop = NodeProxy.audio(s, 2); // set up our NodeProxy
+~bufrd_loop.play; // turn it on!
+~bufrd_loop.source = nil) //fill it with silence.
+
+(~bufrd_loop[0] = {
+    |amp=1, rate=1, lofreq=5|
+    var sig, ptr;
+    var buf = ~b0;  // Directly use the buffer variable
+    var start = 0;
+    var end = buf.numFrames-1;
+//	rate = MouseX.kr(0.1, 10.0, 2.0);
+//	var dusty = Dust.ar(lofreq);
+ //rate = rate * LFNoise1.kr(0.2).range(0.1, 4.0);
+//	rate = (1..12).asArray;
+//	rate= rate.midiratio;
+    ptr = Phasor.ar(0, BufRateScale.kr(buf) * rate, start, end);
+    sig = BufRd.ar(2, buf, ptr);
+    sig = sig * amp;
+    sig;
+};
+)
+
+~bufrd_loop.gui
+
+//
+
+~bufrd_loop.source = nil
+
+
+// To use it with a specific buffer:
+~bufrd_loop.set(\buf, ~b0, \start, 0, \end, ~b0.numFrames-1);
+
+// Optionally, to change the rate:
+~bufrd_loop.set(\rate, 2.0);
+
+
 I can change the start and end points, for example, to only read the second half of the file
 
 x.set(\start, ~b2.numFrames/2, \end, ~b2.numFrames-1);
@@ -103,6 +118,38 @@ x.set(\rate, -7.midiratio);
 
 x.free;
 
+
+(
+SynthDef.new(\bufrd_loop_mouse, {
+    arg amp=1, out=0, buf, rate=1;
+    var sig, ptr;
+    var start, windowWidth, end;
+
+    // MouseX controls the starting point (normalized 0-1)
+    // MouseY controls the window width (normalized 0-1, smaller at the top)
+    start = MouseX.kr(0, BufFrames.kr(buf) - 1000);
+    windowWidth = MouseY.kr(BufFrames.kr(buf) / 2, 1000); // Min 100 frames, max half the buffer
+    end = start + windowWidth;
+
+    // Ensure end doesn't exceed buffer boundaries
+    end = min(end, BufFrames.kr(buf) - 1);
+
+    ptr = Phasor.ar(0, BufRateScale.kr(buf) * rate, start, end, start);
+    sig = BufRd.ar(1, buf, ptr); // Note: using 1 channel since your buffer is mono
+
+    // Convert mono to stereo
+    sig = [sig, sig] * amp;
+
+    Out.ar(out, sig);
+}).add;
+)
+
+x = Synth.new(\bufrd_loop_mouse, [\buf, ~b3.bufnum]);
+
+
+// Run this after the SynthDef is added:
+x = Synth.new(\bufrd_loop_mouse, [\buf, ~b2.bufnum]);
+
 I find that Phasor is usually the right tool for looping through a buffer, but there are a couple alternatives to Phasor, in particular there's Sweep and LFSaw, which you might find useful as a frame pointer in some situations.
 
 But BufRd is even more flexible, because you can use ANY audio rate UGen as a frame pointer, so long as that UGen has an appropriate output range. For example, I can read a buffer forward and backward, sinusoidally by using SinOsc as an audio rate pointer. I'll set the initial phase offset for the sine wave generator to be 3pi/2, so that SinOsc starts at its lowest point, which corresponds to the beginning of the buffer.
@@ -115,7 +162,7 @@ SynthDef.new(\bufrd_sine, {
 	ptr = SinOsc.ar(freq, 3pi/2).range(start, end);
 	sig = BufRd.ar(2, buf, ptr);
 	sig = sig * amp;
-	Out.ar([0,1], sig);
+	Out.ar(out, sig);
 }).add;
 )
 
@@ -132,10 +179,12 @@ SynthDef.new(\bufrd_noise, {
 	sig = BufRd.ar(2, buf, ptr);
 	sig = sig * amp;
 	Out.ar(out, sig);
+	Out.ar(out, [sig,sig]); //can add to convert mono to streo!
 }).add;
 )
 
 x = Synth.new(\bufrd_noise, [\buf, ~b2.bufnum, \start, 0, \end, ~b2.numFrames-1]);
+
 x.free;
 
 With multiple Synths, each playing a different sound, you can get some interesting layered effects.
@@ -143,7 +192,7 @@ With multiple Synths, each playing a different sound, you can get some interesti
 w = Synth.new(\bufrd_noise, [\buf, ~b0.bufnum, \start, 0, \end, ~b0.numFrames-1, \freq, 0.6, \amp, 0.5]);
 x = Synth.new(\bufrd_noise, [\buf, ~b1.bufnum, \start, 0, \end, ~b1.numFrames-1, \freq, 0.8, \amp, 0.5]);
 y = Synth.new(\bufrd_noise, [\buf, ~b2.bufnum, \start, 0, \end, ~b2.numFrames-1, \freq, 0.7, \amp, 0.5]);
-z = Synth.new(\bufrd_noise, [\buf, ~b3.bufnum, \start, 0, \end, ~b3.numFrames-1, \freq, 2.5, \amp, 0.2]);
+z = Synth.new(\bufrd_noise, [\buf, ~b3.bufnum, \start, 0, \end, ~b3.numFrames-1, \freq, 5.5, \amp, 0.2]);
 
 s.freeAll;
 
@@ -163,32 +212,64 @@ g.set(\freq, 0.16);
 
 s.freeAll;
 
-//same technique using nt
-h = NodeProxy.audio(s, 2);
-h.play
-h.source={SinOsc.ar(220, 0, 0.1)}
-h.source=nil
-
-(h.source= {
+//same technique using nodeproxy
+(~turntable = NodeProxy.audio(s, 2);
+~turntable.play;
+~turntable.source=nil;
+~turntable.source= {
     |amp=1, buf, lofreq=0.75, start=0, end|
     var sig, ptr;
-    end = end ? BufFrames.kr(buf) - 1;
-    ptr = LFDNoise3.ar(lofreq).range(start, end);
+    end = end ? BufFrames.kr(buf) - 1; //"If the variable end is nil (i.e., not defined or explicitly set to nil), then assign it the value of BufFrames.kr(buf) - 1; otherwise, keep its existing value."
+    ptr = LFDNoise3.ar(lofreq).range(start, end); //try LFDNoise1, LFNoise2, LFDNoise3
     sig = BufRd.ar(2, buf, ptr);
     sig = sig * amp;
+	Pan2.ar(sig, 0);
 	};
-h.set(\buf, ~b0, \start, 0, \end, ~b0.numFrames-1)
 )
 
-h.set(\buf, ~b1, \start, 0, \end, ~b1.numFrames-1)
+//but because we've built it with buf as an argument, we need to plug in manually which soundfile, or record we're going to use
 
-h.set(\buf, ~b2, \start, 0, \end, ~b2.numFrames-1)
+~turntable.set(\buf, ~b0, \start, 0, \end, ~b0.numFrames-1)
+~turntable.set(\buf, ~b1, \start, 0, \end, ~b1.numFrames-1)
+
+~turntable.set(\buf, ~b2, \start, 0, \end, ~b2.numFrames-1)
 
 ~b0.zero
 ~b0.read("/Users/danielfishkin/gitprojects/MUSIC-CODE-INTERACTIVITY/new_highlights/niceCHORDS.wav");
 //change the sound!
 
-h.gui
+~turntable.gui
+
+
+(~fader = NodeProxy.audio(s,2);
+~fader.play;
+~fader.source=nil;
+~fader.source=
+{|pan=0|
+	XFade2.ar(~turntable.ar, PinkNoise.ar(1), pan, 1); //you can trick this UGEN input by using a NodeProxy at audio rate!
+}
+)
+
+~fader.gui
+
+(
+~drumbeat = Buffer.read(s, "/Users/danielfishkin/gitprojects/MUSIC-CODE-INTERACTIVITY/class8/FREE_Hip-hop_Beats.mp3");
+~beatbox = NodeProxy.audio(s, 2);
+)
+
+(~beatbox.source = {
+    |amp=1, rate=1|  // Added default value for rate
+    var sig, buf, start, end;
+	buf=~drumbeat;
+	start=0;
+    end = buf.numFrames-1;
+	sig = PlayBuf.ar(numChannels: buf.numChannels, bufnum: buf.bufnum, rate: rate, loop:1);
+    sig = sig * amp;
+};
+~beatbox.play;
+)
+~beatbox.gui
+
 
 
 // Create the Ndef version of bufrd_noise

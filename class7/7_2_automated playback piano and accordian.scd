@@ -2,11 +2,11 @@
 
 // Let's get some other sound files into buffers
 (
-//~dirpath = "MySounds/*".resolveRelative; //when you load up a folder, you gotta have the slash after it!
-~dirpath = "piano and accordian/*".resolveRelative; //this folder also sounds good for these examples.
+~dirpath = "MySounds/*".resolveRelative; //when you load up a folder, you gotta have the slash after it!
+//~dirpath = "piano and accordian/*".resolveRelative; //this folder also sounds good for these examples.
 ~filepaths = ~dirpath.pathMatch;
-~buffers = ~filepaths.collect { |path|  Buffer.read(s, path) };
-~buffers = ~filepaths.collect { |path|  Buffer.readChannel(s, path, channels: [0]);};
+//~buffers = ~filepaths.collect { |path|  Buffer.read(s, path) }; //THIS LINE ACCEPTS STEREO
+~buffers = ~filepaths.collect { |path|  Buffer.readChannel(s, path, channels: [0]);};//THIS LINE FORCES MONO
 
 // Make sure the server is booted first
 s.boot;
@@ -15,10 +15,10 @@ s.boot;
 s.waitForBoot({
   ~np = NodeProxy.audio(s, 2);
   // Set some audio content before playing
-  ~np.source = { nil };
-  // Now play it
+  ~np.source = nil;
   ~np.play;
 });
+
 )
 
 /*
@@ -38,22 +38,48 @@ you can take it out if you need to, or you can modify the structure for stereo.
 	var sig;
 	Pan2.ar
 				(
-				PlayBuf.ar(buf.numChannels,buf.bufnum, rate: 1,  doneAction: 2),
+				PlayBuf.ar(buf.numChannels,buf.bufnum, rate: rate,  doneAction: 2),
 				Rand(-1.0, 1.0) //panning left to right randomly
 				);
 		};
+);
+
+
+//added a feature to pick between two different buffers
+(~np[0] = {
+    // Create an array with just buffers at index 0 and 2
+	var buf = [~buffers[0], ~buffers[1]].choose;
+    var rate = 1;
+    var sig;
+
+    Pan2.ar(
+        PlayBuf.ar(buf.numChannels, buf.bufnum, rate: rate, doneAction: 2),
+        Rand(-1.0, 1.0) // panning left to right randomly
+    );
+};
 )
 
+//
+(~np[0] = {
+    var buf = ~buffers[7..9].choose; //or randomly pick from one of the first three files in the array.
+    var rate = 1;
+
+    Pan2.ar(
+        PlayBuf.ar(buf.numChannels, buf.bufnum, rate: rate, doneAction: 2),
+        Rand(-1.0, 1.0) // panning left to right randomly
+    );
+};
+)
 
 //by the way, one style of coding is to declare each variable as you introduce them,
 //instead of all at once at the top. you need to decide which style makes sense.
 
 //just having fun! a sampler player connected to dust.
-(~np[0..10] =
+(~np[0..12] =
 { | lofreq=1|
     var trig = Dust.ar(lofreq);  // Random trigger w controllable argument
-    var buf = ~buffers.choose;
-	var notes = (1..12).asArray;
+	var buf = ~buffers.at(3);
+	var notes = (1..37).asArray;
     // Use the trigger to start the sample playback
     Pan2.ar(
         PlayBuf.ar(
@@ -68,7 +94,7 @@ you can take it out if you need to, or you can modify the structure for stereo.
 };
 )
 ~np.gui
-~np[0..10]={nil}
+~np[0..24]=nil;
 ~np.removeLast
 
 (~np[0] = {
@@ -84,11 +110,12 @@ you can take it out if you need to, or you can modify the structure for stereo.
 
 //lets talk about a few details. what if we want to use a particular note and focus on it?
 (~np[0] = {
-	var buf = ~buffers.at(2); //just pick a particular note so we can hear the changes.
-	var rate = (0..24).choose.midiratio; // you can change the width of the array to easily expand octaves
+	var buf = ~buffers.at(6); //just pick a particular note so we can hear the changes.
+	var rate = (0..12).choose.midiratio; // you can change the width of the array to easily expand octaves
+	var octave = [1,0.5,0.25].choose;
 	var amp = rrand(-40, 0).dbamp; //added a feature for random dynamics. very important—we don't want everyting to be at the same volume.
 			Pan2.ar(
-				PlayBuf.ar(buf.numChannels,buf.bufnum, rate: rate, doneAction: 2) * amp,
+				PlayBuf.ar(buf.numChannels,buf.bufnum, rate: rate*octave, doneAction: 2) * amp,
 				Rand(-1.0, 1.0)
 			)
 		};
@@ -97,7 +124,7 @@ you can take it out if you need to, or you can modify the structure for stereo.
 
 
 (~np[0] = {
-	var buf = ~buffers.at(5); //just pick a particular note so we can hear the changes.
+	var buf = ~buffers.choose; //just pick a particular note so we can hear the changes.
 	var dir = [-1, 1].choose;
 	var rate = dir * (0..24).choose.midiratio; // you can change the width of the array to easily expand octaves
 	var amp = rrand(-40, 0).dbamp; //added a feature for random dynamics. very important—we don't want everyting to be at the same volume.
@@ -117,6 +144,8 @@ you can take it out if you need to, or you can modify the structure for stereo.
 		};
 )
 
+
+Tuning.directory
 ~slendro = Tuning.new(Tuning.calcET(5));
 //this little piece of code defines a new variable, slendro, to be a 5 tone equal temperament scale.
 
@@ -124,7 +153,7 @@ you can take it out if you need to, or you can modify the structure for stereo.
 	var buf = ~buffers.at(5); //just pick a particular note
 	var tuningIndex = (0..~slendro.ratios.size-1).choose;  // Choose a random index from the 5-ET tuning
 	var rate = ~slendro.ratios[tuningIndex];  // Use the ratio from your 5-ET tuning
-	var amp = rrand(-40, 0).dbamp; //random dynamics
+	var amp = rrand(-20, 0).dbamp; //random dynamics
 	Pan2.ar(
 		PlayBuf.ar(buf.numChannels, buf.bufnum, rate: rate, doneAction: 2) * amp,
 		Rand(-1.0, 1.0)
@@ -136,14 +165,14 @@ you can take it out if you need to, or you can modify the structure for stereo.
 //just having fun! a sampler player connected to dust.tuned to slendro.
 //the main difference here is that since i am using synth side controls (ie, controlling the triggering through dust) i need to use synth side objects like TRand.ar and Texprand.
 //i don't want to use these retriggering nodeproxies for the rest of this assignment but i will this away for next time i'm improvising with the class
-(~np[0..10] =
+(~np[0..] =
 { | lofreq=1|
 	var trig, buf, tuningIndex, rate, rateMultiplier, amp, pan;
     trig = Dust.ar(lofreq);  // Random trigger w controllable argument
 	buf = ~buffers.choose;
 	tuningIndex = (0..~slendro.ratios.size-1).choose;  // Choose a random index from the 5-ET tuning
 	rate = ~slendro.ratios[tuningIndex];  // Base ratio from your slendro tuning
-    rateMultiplier = [1, 2].choose;  // Possible rate multipliers
+    rateMultiplier = [1, 0.5, 2].choose;  // Possible rate multipliers
     rate = rate * rateMultiplier;  // Final playback rate
 	amp = TExpRand.ar(0.01, 1, trig);  // New amplitude on each trigger (-40dB to 0dB)
     pan = TRand.ar(-1.0, 1.0, trig);  // New pan position on each trigger.
@@ -172,7 +201,6 @@ you can take it out if you need to, or you can modify the structure for stereo.
     var index = note % notesPerOctave;  // Which note within the octave (0-4)
     // Calculate rate: base ratio × octave multiplier
     var rate = ~slendro.ratios[index] * (2 ** octave);
-
     var amp = rrand(-40, 0).dbamp;
     Pan2.ar(
         PlayBuf.ar(buf.numChannels, buf.bufnum, rate: rate, doneAction: 2) * amp,
@@ -199,17 +227,18 @@ wait the appropriate amount of time and rerun it.
 Here is a simple example:
 
 ~np[0] = Task({
-	"1 mississippi".postln; 2 .wait;
+	"1 mississippi".postln; 1 .wait;
 	"2 mississippi".postln; 1 .wait;
 	"3 mississippi".postln; 1 .wait;
 	"4 mississippi".postln; 1 .wait;
 })
 
 
-~np[1] =  Task({ var buf, rate, amp, wat;
+~np[1] =  Task(
+	{ var buf, rate, amp, wat;
 	 buf =  ~buffers.choose;
 	 rate = (0..12).choose.midiratio;
-	 amp = 0.1;
+	 amp = 0.8;
 	~np[0] = {
 			Pan2.ar(
 				PlayBuf.ar(buf.numChannels,buf.bufnum, rate: rate,  doneAction: 2) * amp,
@@ -247,7 +276,7 @@ Here is a simple example:
 });
 //now this sample player plays infinitely.
 
-~np[1]={nil}
+~np[1]=nil
 
 //let's just tweak it so we can control density.
 
@@ -265,12 +294,15 @@ Here is a simple example:
 				Rand(-1.0, 1.0)
 			)
 		};
-		~waitTime.wait
+	rrand(0.05, 0.013).wait
 	}
 });
 )
+
+
+
 //using global variable like ~waitTime.wait means you can change it dynamically.
-~waitTime=0.1;
+~waitTime=1
 
 ~np[1]=nil
 
@@ -284,7 +316,7 @@ Here is a simple example:
 
 ~np[0] = Task({
 	var buf;
-	"first, the slow section".postln;
+	"first, the super speedy section".postln;
 	50.do { |i | i;
 		buf = ~buffers.choose;
 		~np.add({
@@ -293,7 +325,7 @@ Here is a simple example:
 				Rand(-1.0, 1.0)
 			)
 		});
-		(buf.duration/4).wait
+		rrand(0.01, 0.018).wait
 	};
 	"now, the speedy section".postln;
 	100.do { | i |
