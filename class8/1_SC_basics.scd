@@ -42,6 +42,25 @@ s.boot;
 
 {SinOsc.ar(MouseX.kr(40,4000),0,MouseY.kr(0,1))}.scope; //already this is getting kind of hard to read
 
+
+(
+t =
+{
+	var mx = MouseX.kr(40,4000);
+	var slow = MouseX.kr(0.1,10);
+	var my = MouseY.kr(0,1);
+	var lfo = MouseY.kr(1,1000);
+	var offset = MouseX.kr(200,4000);
+	var modulator = SinOsc.ar(slow, 0, lfo, offset);
+	var sound = SinOsc.ar(modulator,0, 1);
+	sound;
+};
+)
+
+x = t.scope
+
+
+
 //let's create the global variable w, dummy variable for the thing we made
 
 //let's have one sine wave controlling pitch and another controlling rhythm

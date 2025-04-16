@@ -7,7 +7,7 @@
 ~buffers = ~filepaths.collect { |path|  Buffer.readChannel(s, path, channels: [0]);};
 ~waitTime=0.1;
 
-//s.options.maxSynthDefs = 2048;  // Default is 1024, doubling number of synthdefs so we can not overrun the server.
+s.options.maxSynthDefs = 2048;  // Default is 1024, doubling number of synthdefs so we can not overrun the server.
 
 // Make sure the server is booted first
 s.boot;
@@ -29,7 +29,7 @@ s.waitForBoot({
 
     if(defCount > (maxDefs * 0.9)) { // If we're at 90% capacity
         "WARNING: SynthDef count high (%/%), clearing NodeProxy...".format(defCount, maxDefs).postln;
-       ~np[2..1024]=nil;
+       ~np[3..2048]=nil;
         0.1.wait; // Give the server a moment to process the clearing
         "NodeProxy cleared.".postln;
         true
@@ -101,12 +101,12 @@ s.waitForBoot({
 
 	~slendro = Tuning.new(Tuning.calcET(5));
         100.do { |i|
-		var buf = ~buffers.at(4);
+		var buf = ~buffers.[0..1].choose;
             var start = rrand(0, 0.8);
 			var tuningIndex = (0..~slendro.ratios.size-1).choose;  // Choose a random index from the 5-ET tuning
 			var rate = ~slendro.ratios[tuningIndex];  // Use the ratio from your 5-ET tuning
-		    var octaverate = [-2, -1, 1, 2, 4].choose; //negative rates play backward. may result in some frames dropped. see earlier example for hack to fix
-			var amp = rrand(-40, 0).dbamp; //random dynamics
+		    var octaverate = [1, 2, 4].choose; //negative rates play backward. may result in some frames dropped. see earlier example for hack to fix
+			var amp = rrand(-20, 0).dbamp; //random dynamics
             ~np.add({
                 Pan2.ar(
                     PlayBuf.ar(buf.numChannels, buf.bufnum,
@@ -179,6 +179,9 @@ s.waitForBoot({
 "~stop.value - Stop the loop".postln;
 
 //In SuperCollider, when you use .value on a variable that contains a function, you're saying "read whatever function is stored in this variable, and execute it now."
+
+	~slendro = Tuning.new(Tuning.calcET(7));
+
 
 ~start.value
 ~stop.value
