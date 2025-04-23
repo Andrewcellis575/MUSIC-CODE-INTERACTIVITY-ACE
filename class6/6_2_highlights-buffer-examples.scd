@@ -66,8 +66,6 @@ b.read(
 
 ///cool right?
 
-AudioIn.ar
-
 
 //lets modify our peepers example from last week
 ~peepers = NodeProxy.audio(s, 2).play;

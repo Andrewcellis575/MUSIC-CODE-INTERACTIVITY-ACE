@@ -14,6 +14,7 @@ w = n.gui;  // This returns an NdefGui
 w.parent.front;    // Access the window through .parent
 w.parent.alwaysOnTop_(true);  // Set always on top on the parent window
 
+Recorder.new
 
 n[0] = { | amp | WhiteNoise.ar * amp.dup };
 //remember, n[0] is just putting an infinite input channel mixer array at the source of n. you could also just say0 :
@@ -139,4 +140,7 @@ n[0] = { | amp, seed = 1.5, prat = 20 |
 	PitchShift.ar( audio, pitchRatio:  prat) * amp.dup
 };
 
+NdefMixer
 
+
+a.gui
